@@ -106,6 +106,11 @@ class PDOConnector
 
         $split = explode(':', $dsn);
         $driver = $split[0];
+
+        if ($driver == 'sqlite') {
+            return $split[1];
+        }
+
         $params = explode(';', $split[1]);
         array_walk($params, function (&$item) {
             $ar = explode('=', $item);
@@ -114,10 +119,10 @@ class PDOConnector
                 'value' => $ar[1]
             );
         });
+
         foreach ($params as $p) {
             if ($p['key'] == 'dbname' || $p['key'] == 'Database') {
-                $dbName = $p['value'];
-                break;
+                return $p['value'];
             }
         }
 
