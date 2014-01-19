@@ -12,8 +12,7 @@
         "monga/monga": "0.2.4",
         "nesbot/carbon": "dev-master",
         "doctrine/dbal": "~2.3",
-        "doctrine/migrations": "*",
-        "rhumsaa/uuid": "~2.4"
+        "doctrine/migrations": "*"
     },
     "autoload": {
         "psr-0": {
