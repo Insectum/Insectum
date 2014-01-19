@@ -26,13 +26,23 @@ class Pdo extends StorageAbstract
     protected $dbName;
 
     /**
-     * $dbName is required if $connect is a \PDO instance
-     * @param \PDO|array|string $connect
-     * @param string $dbName
+     * Accepts three variants of arguments set
+     *
+     * First:
+     * \PDO $connect, string $dbName
+     *
+     * Second:
+     * string $dsn, string $username, string $password
+     *
+     * Third:
+     * array $dbConfig (see parseConfigArray() method for details)
+     *
      */
-    function __construct($connect, $dbName = null)
+    function __construct(/* polymorphic */)
     {
-        $this->connector = new PDOConnector($connect, $dbName);
+        $params = func_get_args();
+        $reflect = new \ReflectionClass('Insectum\\Insectum\\Storage\\Tools\\PDOConnector');
+        $this->connector = $reflect->newInstanceArgs($params);
     }
 
     /**

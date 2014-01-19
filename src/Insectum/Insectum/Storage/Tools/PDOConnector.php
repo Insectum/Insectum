@@ -27,25 +27,42 @@ class PDOConnector
      */
     protected $dbalConnection;
 
-    /**
-     * @param mixed $connect
-     * @param string|null $dbName
-     */
-    function __construct($connect, $dbName = null)
-    {
-        $this->initConnection($connect, $dbName);
-    }
 
     /**
-     * @param mixed $connect
-     * @param string|null $dbName
+     * Accepts three variants of arguments set
+     *
+     * First:
+     * \PDO $connect, string $dbName
+     *
+     * Second:
+     * string $dsn, string $username, string $password
+     *
+     * Third:
+     * array $dbConfig (see parseConfigArray() method for details)
+     *
+     */
+    function __construct(/* polymorphic */)
+    {
+        $params = func_get_args();
+        call_user_func_array(array($this, 'initConnection'), $params);
+    }
+
+
+    /**
+     * Accepts the same as __construct
+     *
      * @throws \InvalidArgumentException
      * @throws \Exception
      */
-    protected function initConnection($connect, $dbName = null)
+    protected function initConnection(/* polymorphic */)
     {
+        $params = func_get_args();
+
+        $connect = Arr::get($params, 0);
 
         if ($connect instanceof \PDO) {
+
+            $dbName = Arr::get($params, 1);
 
             if (is_null($dbName)) {
                 throw new \InvalidArgumentException('You should provide DB name');
@@ -56,8 +73,11 @@ class PDOConnector
 
         } elseif (is_string($connect)) {
 
+            $user = Arr::get($params, 1);
+            $password = Arr::get($params, 2);
+
             try {
-                $this->connect = new \PDO($connect);
+                $this->connect = new \PDO($connect, $user, $password);
                 $this->connect->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
                 $this->dbName = $this->getDbNameFromDsn($connect);
             } catch (Exception $e) {
@@ -70,6 +90,9 @@ class PDOConnector
             $this->parseConfigArray($connect);
 
         }
+        else {
+            throw new \InvalidArgumentException('Incorrect credentials provided');
+        }
 
     }
 
@@ -79,7 +102,6 @@ class PDOConnector
      */
     protected function getDbNameFromDsn($dsn)
     {
-
         $dbName = null;
 
         $split = explode(':', $dsn);
@@ -123,7 +145,7 @@ class PDOConnector
 
         $dsn = $this->getDsn($driver, $config);
 
-        $this->initConnection($dsn);
+        $this->initConnection($dsn, $config['username'], $config['password']);
 
     }
 
