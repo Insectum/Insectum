@@ -15,6 +15,7 @@ class LogItem
      * @var Contracts\ErrorAbstract[]
      */
     protected $errors;
+    protected $lastOccurrence;
     protected $occurrencesTotal;
     protected $occurrencesUnresolved;
 
@@ -51,9 +52,15 @@ class LogItem
                     $this->occurrencesUnresolved++;
                 }
             }
-            $this->occurrencesUnresolved;
         }
         return $this->occurrencesUnresolved;
+    }
+
+    public function lastOccurrence(){
+        if (is_null($this->lastOccurrence)) {
+            $this->lastOccurrence = $this->errors[0]->occurrence()->occurred_at;
+        }
+        return $this->lastOccurrence;
     }
 
 

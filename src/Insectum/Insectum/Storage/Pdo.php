@@ -171,7 +171,7 @@ class Pdo extends StorageAbstract
         $occurrencesTable = $this->getOccurrencesTableOfKind($kind);
 
         // Get errors from db
-        $getErrors = "SELECT * FROM {$errorsTable} AS ert LEFT JOIN {$occurrencesTable} AS oct ON oct.error_id = ert.id";
+        $getErrors = "SELECT DISTINCT ert.id FROM {$errorsTable} AS ert LEFT JOIN {$occurrencesTable} AS oct ON oct.error_id = ert.id";
         if (!is_null($resolvedStatus)) {
             if ($resolvedStatus == self::RESOLVED_ONLY) {
                 $getErrors .= " WHERE ert.resolved_at IS NOT NULL AND oct.occurred_at <= ert.resolved_at";
@@ -179,11 +179,8 @@ class Pdo extends StorageAbstract
                 $getErrors .= " WHERE ert.resolved_at IS NULL OR oct.occurred_at > ert.resolved_at";
             }
         }
-        $getErrors .= " ORDER BY ert.created_at DESC LIMIT :limit OFFSET :offset";
-        $errors = $this->runStatement($getErrors, array(
-            'limit' => $limit,
-            'offset' => $offset
-        ), $kind)->fetchAll();
+        $getErrors .= " ORDER BY ert.created_at DESC LIMIT {$limit} OFFSET {$offset}";
+        $errors = $this->runStatement($getErrors, null, $kind)->fetchAll();
 
         if (empty($errors)) {
             return array();
@@ -192,20 +189,25 @@ class Pdo extends StorageAbstract
         // Get ID's
         $ids = Arr::pluck($errors, 'id');
 
+        $inQuery = implode(',', $ids);
+
         // Get all occurrences for given errors
         $getOccurrences = "
         SELECT ert.*, oct.*, oct.id as occurrence_id, ert.id as error_id
         FROM {$errorsTable} AS ert
         LEFT JOIN {$occurrencesTable} AS oct
         ON oct.error_id = ert.id
-        WHERE ert.id IN (?)";
+        WHERE ert.id IN ({$inQuery})
+        ORDER BY oct.occurred_at DESC";
 
-        $occurrences = $this->runStatement($getOccurrences, array(implode(',', $ids)), $kind)->fetchAll();
+        $occurrences = $this->runStatement($getOccurrences, null, $kind)->fetchAll(\PDO::FETCH_ASSOC);
+
+        $ids = Arr::pluck($occurrences, 'error_id');
 
         // Group errors by id
         $pool = array();
         foreach ($occurrences as $oc) {
-            $pool[$oc->error_id][] = new $class($oc, $oc->error_id);;
+            $pool[$oc['error_id']][] = new $class($oc, $oc['error_id']);;
         }
 
         // Convert pool to log items array
