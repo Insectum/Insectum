@@ -15,7 +15,7 @@ class Backend extends ErrorAbstract {
     public function summary()
     {
         $msg = '%s in %s on line %s';
-        return !empty($this->msg) ? $this->msg : sprintf($msg, $this->type, $this->file, $this->line);
+        return $this->msg ? $this->msg : sprintf($msg, $this->type, $this->file, $this->line);
     }
 
     /**
